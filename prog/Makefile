@@ -1,5 +1,5 @@
 compile :
-	gcc main.c -lm
+	gcc mainQ1.c -lm
 
 run : compile
 	./a.out
