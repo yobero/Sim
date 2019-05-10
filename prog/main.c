@@ -8,7 +8,6 @@
 #define EPSILON 1e-3
 #define MAXEVENT 10000000
 #define NBSERVEUR 10
-#define LAMBDA 9
 #define MU 10
 
 //Structure
@@ -26,6 +25,7 @@ typedef struct echeancier{
 }echeancier;
 
 //Variable globale
+int LAMBDA=9;
 echeancier ech;
 double T=0.0;
 long int n=0;
@@ -207,6 +207,8 @@ void simulation(){
 }
 
 int main(){
+  FILE* f = fopen("lambda.txt","r+");
   srandom(getpid()+ time(NULL));
   simulation();
+  flose(f);
 }
