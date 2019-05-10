@@ -1,7 +1,7 @@
-compile :
+compile1 :
 	gcc mainQ1.c -lm
 
-run : compile
+run1 : compile1
 	./a.out
 
 runR : compile

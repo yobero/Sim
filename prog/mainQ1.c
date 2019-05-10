@@ -25,7 +25,7 @@ typedef struct echeancier{
 }echeancier;
 
 //Variable globale
-int LAMBDA=9;
+int LAMBDA=0;
 echeancier ech;
 double T=0.0;
 long int n=0;
@@ -207,8 +207,24 @@ void simulation(){
 }
 
 int main(){
-  FILE* f = fopen("lambda.txt","r+");
+  FILE* f = fopen("lambda.txt","r");
   srandom(getpid()+ time(NULL));
-  simulation();
-  flose(f);
+  if(f!=NULL){
+    int l=0;
+    do{
+      l = fgetc(f);
+      if(l-48>0){
+        LAMBDA = l-48;
+        simulation();
+      }
+      fgetc(f);
+    }
+    while(l!=EOF);
+    //LAMBDA=9;
+    //simulation();
+    fclose(f);
+  }
+  else{
+    printf("Le fichier n'a pas été chargé !!!\n");
+  }
 }
