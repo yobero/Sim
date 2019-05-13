@@ -97,9 +97,18 @@ void initOcc(){
   }
 }
 
+void initVariable(){
+  T=0.0;
+  n=0;
+  ticket=1;
+  cumul=0;
+  compteur=0;
+}
+
 void initSimulation(){
   initEcheancier();
   initOcc();
+  initVariable();
 }
 
 long int rechercheServeurLibre(){
@@ -186,7 +195,7 @@ int condition_arret (long double old, long double new){
   return 0;
 }
 
-void simulation(){
+void simulation(FILE* resultat){
   initSimulation();
 
   long double oldNmoyen=0;
@@ -204,10 +213,14 @@ void simulation(){
     if(e.type==0) arriveeClient(e);
     if(e.type==1) finService(e);
   }
+  //Ecriture dans le fichier
+  //LAMBDA E[A] T90
+  fprintf(resultat, "%d %f %f\n",LAMBDA, 0.0,0.0 );
 }
 
 int main(){
   FILE* f = fopen("lambda.txt","r");
+  FILE* resultat = fopen("resultat1.txt","w");
   srandom(getpid()+ time(NULL));
   if(f!=NULL){
     int l=0;
@@ -215,7 +228,7 @@ int main(){
       l = fgetc(f);
       if(l-48>0){
         LAMBDA = l-48;
-        simulation();
+        simulation(resultat);
       }
       fgetc(f);
     }
@@ -223,6 +236,7 @@ int main(){
     //LAMBDA=9;
     //simulation();
     fclose(f);
+    fclose(resultat);
   }
   else{
     printf("Le fichier n'a pas été chargé !!!\n");
