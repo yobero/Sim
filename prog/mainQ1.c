@@ -111,6 +111,7 @@ void initSimulation(){
   initVariable();
 }
 
+//FOnction pour rechercher un serveur disponible
 long int rechercheServeurLibre(){
   for(int i=0;i<NBSERVEUR;i++){
     if(occ[i]==0) return i;
@@ -147,10 +148,12 @@ void arriveeClient(event e){
   T=e.t;
 }
 
+//FS
 void finService(event e){
   if(n>0){
     n--;
     if(n>NBSERVEUR){
+      //Cas ou il y a plus de NBSERVEUR dans la file et donc le serveur liberer peut prendre le prochain client
       int indice=-1;
         for(int i=0;i<ech.taille;i++){
           if(ech.T[i].type==0 && ech.T[i].etat==1){
@@ -195,6 +198,7 @@ int condition_arret (long double old, long double new){
   return 0;
 }
 
+//Fonction simulation
 void simulation(FILE* resultat){
   initSimulation();
 
@@ -219,22 +223,28 @@ void simulation(FILE* resultat){
 }
 
 int main(){
+  //Fichier ouvert en mode lecture seul, contient les valeurs de lambda
   FILE* f = fopen("lambda.txt","r");
+  //Fichier ouvert en mode ecriture, va contenir pour chaque ligne lambda e[A] t90
   FILE* resultat = fopen("resultat1.txt","w");
   srandom(getpid()+ time(NULL));
   if(f!=NULL){
     int l=0;
+    //On lit le fichier lambda.txt tant qu'il reste une valeur à lambda
     do{
       l = fgetc(f);
+      //Bloc la derniere ligne si c'est juste un retour à la ligne
+      //48 est la valeur decimal du caractère 0.
       if(l-48>0){
         LAMBDA = l-48;
         simulation(resultat);
       }
+      //On passe le caractère \n (retour à la ligne)
       fgetc(f);
     }
     while(l!=EOF);
-    //LAMBDA=9;
-    //simulation();
+
+    //Fermeture des fichiers
     fclose(f);
     fclose(resultat);
   }
