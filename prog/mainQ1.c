@@ -9,6 +9,7 @@
 #define MAXEVENT 10000000
 #define NBSERVEUR 10
 #define MU 10
+#define TEMPSMAX 1000000
 
 //Structure
 typedef struct evenement{
@@ -195,6 +196,7 @@ int condition_arret (long double old, long double new){
   if(compteur>1e3){
     return 1;
   }
+  if(T>TEMPSMAX) return 1;
   return 0;
 }
 
@@ -219,7 +221,17 @@ void simulation(FILE* resultat){
   }
   //Ecriture dans le fichier
   //LAMBDA E[A] T90
-  fprintf(resultat, "%d %f %f\n",LAMBDA, 0.0,0.0 );
+  double E;
+  double t90;
+  if(T<TEMPSMAX){
+    E=0.0;
+    t90=0.0;
+  }
+  else{
+    E=-1;
+    t90=-1;
+  }
+  fprintf(resultat, "%d %f %f\n",LAMBDA, E,t90 );
 }
 
 int main(){
