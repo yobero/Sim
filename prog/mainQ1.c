@@ -67,11 +67,6 @@ event extrait(){
     return ech.T[indiceM];
 }
 
-event extraitFS(){
-  int indiceM=0;
-
-}
-
 void ajoutEvent(event e){
   if(ech.taille==MAXEVENT){
     printf("echeancier plein !!!\n");
@@ -204,8 +199,8 @@ int condition_arret (long double old, long double new){
 void simulation(FILE* resultat){
   initSimulation();
 
-  long double oldNmoyen=0;
-  long double Nmoyen=0;
+  long double oldNmoyen=0.0;
+  long double Nmoyen=0.0;
 
   while(condition_arret(oldNmoyen,Nmoyen)==0){
   //while(T<10000){
