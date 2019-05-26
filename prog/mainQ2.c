@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 //Constante
-#define EPSILON 1e-3
+#define EPSILON 1e-4
 #define MAXEVENT 10000000
 #define NBSERVEUR 10
 #define MU 10
@@ -30,8 +30,6 @@ echeancier ech;
 double T=0.0;
 long int n=0;
 long int ticket=1;
-long int ticketCourant=0;
-int occ[NBSERVEUR];
 double cumul=0;
 int compteur=0;
 
@@ -69,7 +67,6 @@ void initVariable(){
   T=0.0;
   n=0;
   ticket=1;
-  ticketCourant=0;
   cumul=0;
   compteur=0;
 }
@@ -96,7 +93,6 @@ void arriveeClient(event e){
     e2.etat=0;
     e2.ticket=e.ticket;
     ajoutEvent(e2);
-    ticketCourant++;
   }
   T=e.t;
 }
@@ -111,7 +107,6 @@ void finService(event e){
       e1.etat=0;
       e1.ticket=e.ticket+1;
       ajoutEvent(e1);
-      ticketCourant++;
     }
   }
   T=e.t;
@@ -161,21 +156,9 @@ void simulation(FILE* resultat){
 
   long double oldNmoyen=0.0;
   long double Nmoyen=0.0;
-
-  /*event e;
-  e.type=0;
-  e.t=0;
-  e.ticket=0;
-  e.etat=0;*/
-  //int a=0;
   while(condition_arret(oldNmoyen,Nmoyen)==0){
-  //while(T<10000){
-  //while(a<5){
-    //a++;
+
     event e = extrait();
-    //printf("%f\n", e.t);
-    //e.t++;
-    //printf("%f\n", e.t);
 
     cumul+=(e.t-T)*n; //intervalle de temps * le nombre de client dans cette intervalle
 
@@ -187,18 +170,21 @@ void simulation(FILE* resultat){
     //etatEch();
   }
   //Ecriture dans le fichier
-  //LAMBDA E[A] T90
+  //LAMBDA Nmoy E[A] T90
+  double Nmoy;
   double E;
   double t90;
   if(T<TEMPSMAX){
+    Nmoy=cumul/T;
     E=0.0;
     t90=0.0;
   }
   else{
+    Nmoy=-1;
     E=-1;
     t90=-1;
   }
-  fprintf(resultat, "%f %f %f\n",LAMBDA, E,t90 );
+  fprintf(resultat, "%f %f %f %f\n",LAMBDA,Nmoy, E,t90 );
 }
 
 int main(){
@@ -216,7 +202,7 @@ int main(){
       //48 est la valeur decimal du caractère 0.
       if(l-48>0){
         LAMBDA = l-48;
-        LAMBDA = LAMBDA/10;
+        LAMBDA = LAMBDA/NBSERVEUR;
         simulation(resultat);
       }
       //On passe le caractère \n (retour à la ligne)

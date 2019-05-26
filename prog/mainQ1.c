@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 //Constante
-#define EPSILON 1e-3
+#define EPSILON 1e-4
 #define MAXEVENT 10000000
 #define NBSERVEUR 10
 #define MU 10
@@ -215,18 +215,21 @@ void simulation(FILE* resultat){
     if(e.type==1) finService(e);
   }
   //Ecriture dans le fichier
-  //LAMBDA E[A] T90
+  //LAMBDA Nmoy E[A] T90
+  double Nmoy;
   double E;
   double t90;
   if(T<TEMPSMAX){
+    Nmoy=cumul/T;
     E=0.0;
     t90=0.0;
   }
   else{
+    Nmoy=-1;
     E=-1;
     t90=-1;
   }
-  fprintf(resultat, "%d %f %f\n",LAMBDA, E,t90 );
+  fprintf(resultat, "%d %f %f %f\n",LAMBDA, Nmoy, E, t90);
 }
 
 int main(){
