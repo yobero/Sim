@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 //Constante
-#define EPSILON 1e-4
+#define EPSILON 1e-2
 #define MAXEVENT 10000000
 #define NBSERVEUR 10
 #define MU 10
@@ -24,9 +24,15 @@ typedef struct echeancier{
   long int taille;
 }echeancier;
 
+typedef struct tableau{
+  double T[MAXEVENT];
+  long int taille;
+}tab;
+
 //Variable globale
 double LAMBDA=0.0;
 echeancier ech;
+tab tempsMoy;
 double T=0.0;
 long int n=0;
 long int ticket=1;
@@ -63,6 +69,13 @@ void initEcheancier(){
   ajoutEvent(e);
 }
 
+void initTempsMoy(){
+  for(int i=0;i<MAXEVENT;i++){
+    tempsMoy.T[i]=0.0;
+  }
+  tempsMoy.taille=0;
+}
+
 void initVariable(){
   T=0.0;
   n=0;
@@ -73,7 +86,19 @@ void initVariable(){
 
 void initSimulation(){
   initEcheancier();
+  initTempsMoy();
   initVariable();
+}
+
+event rechercheEvent(long int ticket){
+  event e;
+  e.ticket=-1;
+  for(int i=0;i<ech.taille;i++){
+    if(ech.T[i].etat==1 && ech.T[i].type==0 && ech.T[i].ticket==ticket){
+      e=ech.T[i];
+    }
+  }
+  return e;
 }
 
 void arriveeClient(event e){
@@ -93,6 +118,10 @@ void arriveeClient(event e){
     e2.etat=0;
     e2.ticket=e.ticket;
     ajoutEvent(e2);
+
+    //Ce client n'attent pas
+    tempsMoy.T[tempsMoy.taille]=0.0;
+    tempsMoy.taille++;
   }
   T=e.t;
 }
@@ -107,6 +136,11 @@ void finService(event e){
       e1.etat=0;
       e1.ticket=e.ticket+1;
       ajoutEvent(e1);
+
+      //le client qui commence le service a attendu
+      event p = rechercheEvent(e.ticket+1);
+      tempsMoy.T[tempsMoy.taille]=fabs(p.t-e.t);
+      tempsMoy.taille++;
     }
   }
   T=e.t;
@@ -121,7 +155,7 @@ event extrait(){
     }
   }
   for(int i=0;i<ech.taille;i++){
-    if(ech.T[i].etat==0 && ech.T[i].ticket<ech.T[indiceM].ticket){
+    if(ech.T[i].etat==0 && ech.T[i].t<ech.T[indiceM].t){
       indiceM=i;
     }
   }
@@ -176,7 +210,10 @@ void simulation(FILE* resultat){
   double t90;
   if(T<TEMPSMAX){
     Nmoy=cumul/T;
-    E=0.0;
+    for(int i=0;i<tempsMoy.taille;i++){
+      E+=tempsMoy.T[i];
+    }
+    E=E/tempsMoy.taille;
     t90=0.0;
   }
   else{
@@ -184,7 +221,7 @@ void simulation(FILE* resultat){
     E=-1;
     t90=-1;
   }
-  fprintf(resultat, "%f %f %f %f\n",LAMBDA,Nmoy, E,t90 );
+  fprintf(resultat, "%f %f %f %f\n",LAMBDA*NBSERVEUR,Nmoy*NBSERVEUR, E*NBSERVEUR,t90*NBSERVEUR );
 }
 
 int main(){
@@ -195,20 +232,34 @@ int main(){
   srandom(getpid()+ time(NULL));
   if(f!=NULL){
     int l=0;
+    int m=0;
     //On lit le fichier lambda.txt tant qu'il reste une valeur à lambda
+    printf("Execution du model 2\nValeur de lambda / %d\n", NBSERVEUR);
     do{
       l = fgetc(f);
-      //Bloc la derniere ligne si c'est juste un retour à la ligne
-      //48 est la valeur decimal du caractère 0.
-      if(l-48>0){
-        LAMBDA = l-48;
-        LAMBDA = LAMBDA/NBSERVEUR;
-        simulation(resultat);
+      m=fgetc(f);
+      if(m==10){
+        //Bloc la derniere ligne si c'est juste un retour à la ligne
+        //48 est la valeur decimal du caractère 0.
+        if(l-48>0){
+          LAMBDA = l-48;
+          LAMBDA=LAMBDA/NBSERVEUR;
+          printf("%f\n", LAMBDA);
+          simulation(resultat);
+        }
       }
-      //On passe le caractère \n (retour à la ligne)
-      fgetc(f);
+      else{
+        if(l-48>0 && m-48>=0){
+          LAMBDA = (l-48)*10+(m-48);
+          LAMBDA=LAMBDA/NBSERVEUR;
+          printf("%f \n",LAMBDA );
+          simulation(resultat);
+        }
+        //On passe le caractère \n (retour à la ligne)
+        fgetc(f);
+      }
     }
-    while(l!=EOF);
+    while(l!=EOF && m!=EOF);
 
     //Fermeture des fichiers
     fclose(f);
