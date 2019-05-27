@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 //Constante
-#define EPSILON 1e-2
+#define EPSILON 1e-4
 #define MAXEVENT 10000000
 #define NBSERVEUR 10
 #define MU 10
