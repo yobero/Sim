@@ -1,0 +1,54 @@
+
+dans une fille d'attente plus on augmente la frequance d'arrive de client
+par raport a la fréquence a la quelle ils sonts servit plus on augmente leur temps moyen d'attente 
+
+mais le mode de fonctionement 2 semble significativement moins bon que 
+le 1 et le 3 
+
+pour comprendre pourquoi je m'appuit sur une file m/m/1 comme exemple (1 seul serveur)
+pour que le system soit stable (et donc testable )il faut qu'il y a moins d'arrive que de sortie 
+l'augmentation du temps d'attente vien des irregularité dans les statistiques 
+dans une periode il peut y avoir subitement plus de client qui arrive 
+ou ils peuvent etres servit plus lentement ce qui genere de l'attente 
+il est aussi possible que le serveur serve vite et que il attende sans client
+c'est du temps d'attente negatif (qui na pas de sens dans la vrai vie)
+
+dans le cadre d'une m/m/10 
+les irregularité serons gommé par le nombre de serveur
+la ou il falais 1 irregularite pour faire grandire la file d'attente (pour m/m/1)
+il en faut maintent 10 ce qui reduit drastiquement les probabilité que cela arrive
+sans irregularite les clients arriveraient tout les 1/lambda et serais servit tout les 1/mu
+lambda ettant plus petit que mu ils n'attendrais jamais
+
+le mode de fonctionement 2 ne beneficie pas de cette protection car
+les clients sont placer aleatoirements sur des serveurs
+voyons le problemme différemment si on donne a chaque client 
+sont nummero de file avan qu'ils commencent a attendre on se retronve alors avec 10 files distinctes m/m/1
+et le temps d'attente moyen de notre systemme et la moyenne du temps d'attente moyen de ces 10 files 
+
+/*
+q1
+* 
+expected
+1 0.095085 0.000000 0.000000
+5 0.500000 0.000000 0.000000
+10 1.000000 0.000000 0.000000
+20 2.000000 0.000000 0.000000
+50 5.036100 0.000700 0.000000
+70 7.460736 0.007000 0.000000
+90 15.19262 0.066730 0.000000
+95 25.10383 0.168200 0.000000
+
+
+seen
+1 0.102980 0.000000 0.000000
+5 0.416888 0.000000 0.000000
+10 0.711716 0.000000 0.000000
+20 1.141554 0.000000 0.000000
+50 2.033510 0.000000 0.000000
+70 2.456147 0.009092 0.000000
+90 2.815607 0.048520 0.000000
+95 2.893130 0.026114 0.000000
+
+
+*/
