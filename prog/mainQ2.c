@@ -1,11 +1,7 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-#include <math.h>
-#include <unistd.h>
+#include "tri_fusion.c"
 
 //Constante
-#define EPSILON 1e-4
+#define EPSILON 1e-3
 #define MAXEVENT 10000000
 #define NBSERVEUR 10
 #define MU 10
@@ -175,7 +171,7 @@ int condition_arret (long double old, long double new){
 }
 
 void etatEch(){
-  printf("========================taille de l'echeancier : %ld\n", ech.taille);
+  printf("========================taille de l'echeancier : %ld ==== %ld\n", ech.taille,n);
   for(int i=0;i<ech.taille;i++){
     printf("position : %d", i);
     printf(", type : %d", ech.T[i].type);
@@ -190,8 +186,10 @@ void simulation(FILE* resultat){
 
   long double oldNmoyen=0.0;
   long double Nmoyen=0.0;
+  //int a=0;
   while(condition_arret(oldNmoyen,Nmoyen)==0){
-
+  //while(a<5){
+    //a++;
     event e = extrait();
 
     cumul+=(e.t-T)*n; //intervalle de temps * le nombre de client dans cette intervalle
@@ -214,7 +212,9 @@ void simulation(FILE* resultat){
       E+=tempsMoy.T[i];
     }
     E=E/tempsMoy.taille;
-    t90=0.0;
+
+    tri_fusion(tempsMoy.T,tempsMoy.taille);
+    t90=tempsMoy.T[(tempsMoy.taille*90)/100];
   }
   else{
     Nmoy=-1;

@@ -1,7 +1,7 @@
 #include "tri_fusion.c"
 
 //Constante
-#define EPSILON 1e-2
+#define EPSILON 1e-3
 #define MAXEVENT 10000000
 #define NBSERVEUR 10
 #define MU 10
@@ -12,6 +12,7 @@ typedef struct evenement{
   int type;
   double t;
   int etat;
+  int serveur;
   long int ticket;
 }event;
 
@@ -26,49 +27,18 @@ typedef struct tableau{
 }tab;
 
 //Variable globale
-int LAMBDA=0;
+double LAMBDA=0.0;
 echeancier ech;
 double T=0.0;
-long int n=0;
-long int ticket=1;
-long int ticketCourant=0;
-tab tempsMoy;
+long int n[NBSERVEUR];
+long int N=0;
+long int ticket[NBSERVEUR];
+long int ticketCourant[NBSERVEUR];
+int occ[NBSERVEUR];
 double cumul=0;
 int compteur=0;
-int indice=0;
 
 //Fonction
-double Exponentielle(double lbda){
-  double r = (double) random()/RAND_MAX;
-
-  while(r==0 || r==1){
-    r = (double) random()/RAND_MAX;
-  }
-  return -log(r)/(lbda*1.0);
-}
-
-long int min(long int n, long int m){
-  if(n<m) return n;
-  else return m;
-}
-
-int extrait(){
-  int indiceM;
-  for(int i=0;i<ech.taille;i++){
-    if(ech.T[i].etat==0){
-      indiceM=i;
-      break;
-    }
-  }
-    for(int i=0;i<ech.taille;i++){
-      if(ech.T[i].etat==0 && ech.T[indiceM].t>ech.T[i].t){
-        indiceM=i;
-      }
-    }
-    ech.T[indiceM].etat=1;
-    return indiceM;
-}
-
 void ajoutEvent(event e){
   if(ech.taille==MAXEVENT){
     printf("echeancier plein !!!\n");
@@ -78,14 +48,31 @@ void ajoutEvent(event e){
     ech.taille++;
   }
 }
+
+double Exponentielle(double lbda){
+  double r = (double) random()/RAND_MAX;
+
+  while(r==0 || r==1){
+    r = (double) random()/RAND_MAX;
+  }
+  return -log(r)/(lbda*1.0);
+}
+
 void initEcheancier(){
   ech.taille=0;
   event e;
   e.type=0;
   e.t=0.0;
   e.etat=0;
-  e.ticket=0;
+  e.ticket=-1;
+  e.serveur=-1;
   ajoutEvent(e);
+}
+
+void initN(){
+  for(int i=0;i<NBSERVEUR;i++){
+    n[i]=0;
+  }
 }
 
 void initTempsMoy(){
@@ -95,82 +82,125 @@ void initTempsMoy(){
   tempsMoy.taille=0;
 }
 
+void initTicket(){
+  for(int i=0;i<NBSERVEUR;i++){
+    ticket[i]=0;
+  }
+}
+
+void initTicketCourant(){
+  for(int i=0;i<NBSERVEUR;i++){
+    ticketCourant[i]=0;
+  }
+}
+
 void initVariable(){
   T=0.0;
-  n=0;
-  ticket=0;
-  ticketCourant=0;
+  N=0;
   cumul=0;
   compteur=0;
-  indice=0;
 }
 
 void initSimulation(){
   initEcheancier();
+  initN();
   initTempsMoy();
+  initTicket();
+  initTicketCourant();
   initVariable();
 }
 
+//Fonction pour savoir qu'elle est la file contenant le moins de client
+long int fileM(){
+  long int indice=0;
+  for(int i=1;i<NBSERVEUR;i++){
+    if(n[indice]>n[i])
+      indice=i;
+  }
+  return indice;
+}
 
-event rechercherClient(long int ticket){
+event rechercheEvent(long int ticket, int s){
   event e;
   e.ticket=-1;
   for(int i=0;i<ech.taille;i++){
-    if(ech.T[i].etat==1 && ech.T[i].type==0 && ech.T[i].ticket==ticket){
+    if(ech.T[i].etat==1 && ech.T[i].type==0 && ech.T[i].ticket==ticket && ech.T[i].serveur==s){
       e=ech.T[i];
-      break;
     }
   }
   return e;
 }
 
 void arriveeClient(event e){
-  n++;
+  int indiceM = fileM();
+  N++;
+  n[indiceM]++;
+  e.ticket=ticket[indiceM];
+  e.serveur=indiceM;
+  ticket[indiceM]++;
+
   event e1;
   e1.type=0;
   e1.t=e.t+Exponentielle(LAMBDA);
   e1.etat=0;
-  e1.ticket=ticket;
+  e1.ticket=-1; //on ne sait pas dans quel serveur ira le client
+  e1.serveur=-1;
   ajoutEvent(e1);
-  ticket++;
 
-  if(n<=NBSERVEUR && n>0){
+  if(n[indiceM]==1){
     event e2;
     e2.type=1;
-    e2.t=e.t+Exponentielle(MU*n);
+    e2.t=e.t+Exponentielle(MU);
     e2.etat=0;
     e2.ticket=e.ticket;
+    e2.serveur=e.serveur;
     ajoutEvent(e2);
-
-    //Ce client n'attend pas
     tempsMoy.T[tempsMoy.taille]=0.0;
     tempsMoy.taille++;
   }
   T=e.t;
 }
 
-//FS
 void finService(event e){
-  if(n>0){
-    n--;
-    if(n>=NBSERVEUR){
-      //printf("BONJOUR\n");
-      //Cas ou il y a plus de NBSERVEUR clients dans la file et donc le serveur liberer peut prendre le prochain client
-      //grâce a e on connait le serveur disponible
+  int serveur=e.serveur;
+  if(n[serveur]>0){
+    N--;
+    n[serveur]--;
+    if(n[serveur]>0){
       event e1;
       e1.type=1;
-      e1.t=e.t+Exponentielle(MU*NBSERVEUR);
-      e1.ticket=ticketCourant;
-      ticketCourant++;
+      e1.t=e.t+Exponentielle(MU);
+      e1.serveur=serveur;
+      e1.ticket=ticketCourant[serveur]+1;
+      ticketCourant[serveur]++;
       e1.etat=0;
       ajoutEvent(e1);
 
-      event p = rechercherClient(ticketCourant);
+      //le client qui commence le service a attendu
+      event p = rechercheEvent(e.ticket+1,serveur);
       tempsMoy.T[tempsMoy.taille]=fabs(p.t-e.t);
       tempsMoy.taille++;
     }
   }
   T=e.t;
+}
+
+event extrait(){
+  long int indiceM=0;
+  for(int i=0;i<ech.taille;i++){
+    if(ech.T[i].etat==0){
+      indiceM=i;
+      break;
+    }
+  }
+
+  for(int i=0;i<ech.taille;i++){
+    if(ech.T[i].etat==0 && ech.T[i].t<ech.T[i].t){
+      indiceM=i;
+    }
+  }
+  ech.T[indiceM].etat=1;
+  return ech.T[indiceM];
 }
 
 int condition_arret (long double old, long double new){
@@ -184,39 +214,25 @@ int condition_arret (long double old, long double new){
   return 0;
 }
 
-void etatEch(){
-  printf("========================taille de l'echeancier : %ld ========= %ld\n", ech.taille,n);
-  for(int i=0;i<ech.taille;i++){
-    printf("position : %d", i);
-    printf(", type : %d", ech.T[i].type);
-    printf(", ticket : %ld", ech.T[i].ticket);
-    printf(", t : %f",ech.T[i].t);
-    printf(", etat : %d\n\n", ech.T[i].etat);
-  }
-}
 
-//Fonction simulation
+
 void simulation(FILE* resultat){
   initSimulation();
 
   long double oldNmoyen=0.0;
-    long double Nmoyen=0.0;
-
+  long double Nmoyen=0.0;
 
   while(condition_arret(oldNmoyen,Nmoyen)==0){
-  //while(n<100){
-    indice=extrait();
-    event e = ech.T[indice];
-    //printf("%d\n",n);
+    event e = extrait();
 
-    cumul+=(e.t-T)*n; //intervalle de temps * le nombre de client dans cette intervalle
+    cumul+=(e.t-T)*N; //intervalle de temps * le nombre de client dans cette intervalle
 
     oldNmoyen=Nmoyen;
     Nmoyen=cumul/T;
 
     if(e.type==0) arriveeClient(e);
     if(e.type==1) finService(e);
-    //etatEch();
+
   }
   //Ecriture dans le fichier
   //LAMBDA Nmoy E[A] T90
@@ -229,27 +245,30 @@ void simulation(FILE* resultat){
       E+=tempsMoy.T[i];
     }
     E=E/tempsMoy.taille;
-    t90=0.0;
+
+    tri_fusion(tempsMoy.T,tempsMoy.taille);
+    t90=tempsMoy.T[(tempsMoy.taille*90)/100];
   }
   else{
     Nmoy=-1;
     E=-1;
     t90=-1;
   }
-  fprintf(resultat, "%d %f %f %f\n",LAMBDA, Nmoy, E, t90);
+  fprintf(resultat, "%f %f %f %f\n",LAMBDA,Nmoy, E,t90 );
+
 }
 
 int main(){
   //Fichier ouvert en mode lecture seul, contient les valeurs de lambda
   FILE* f = fopen("lambda.txt","r");
   //Fichier ouvert en mode ecriture, va contenir pour chaque ligne lambda e[A] t90
-  FILE* resultat = fopen("resultat1.txt","w");
+  FILE* resultat = fopen("resultat3.txt","w");
   srandom(getpid()+ time(NULL));
   if(f!=NULL){
     int l=0;
     int m=0;
     //On lit le fichier lambda.txt tant qu'il reste une valeur à lambda
-    printf("Execution du model 1\nValeur de lambda :\n");
+    printf("Execution du model 3\nValeur de lambda :\n");
     do{
       l = fgetc(f);
       m=fgetc(f);
@@ -258,14 +277,14 @@ int main(){
         //48 est la valeur decimal du caractère 0.
         if(l-48>0){
           LAMBDA = l-48;
-          printf("%d\n", LAMBDA);
+          printf("%f\n", LAMBDA);
           simulation(resultat);
         }
       }
       else{
         if(l-48>0 && m-48>=0){
           LAMBDA = (l-48)*10+(m-48);
-          printf("%d\n",LAMBDA );
+          printf("%f\n",LAMBDA );
           simulation(resultat);
         }
         //On passe le caractère \n (retour à la ligne)

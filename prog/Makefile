@@ -10,16 +10,26 @@ compile2:
 run2: compile2
 	./q2
 
+compile3 :
+	gcc mainQ3.c -o q3 -lm
+
+run3 : compile3
+	./q3
+
 runR : compile1 compile2
 		./q1
 		./q2
+		./q3
 		Rscript essai.R
 		eog plot.jpg
+R :
+	Rscript essai.R
 
-clear :
+clear : compile1 compile2 compile3
 	rm q1
 	rm q2
+	rm q3
 	rm resultat1.txt
 	rm resultat2.txt
-	rm donnee
+	rm resultat3.txt
 	rm plot.jpg
