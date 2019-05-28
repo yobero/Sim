@@ -1,30 +1,29 @@
 
-dans une fille d'attente plus on augmente la frequance d'arrive de client
-par raport a la fréquence a la quelle ils sonts servit plus on augmente leur temps moyen d'attente 
+Dans une fille d'attente, plus on augmente la fréquence d'arrivée du client
+par rapport à la fréquence à laquelle ils sont servis,  plus on augmente leur temps moyen d'attente 
 
-mais le mode de fonctionement 2 semble significativement moins bon que 
-le 1 et le 3 
+Mais le mode de fonctionement 2 semble significativement moins bon que celui du 1 et du 3 .
 
-pour comprendre pourquoi je m'appuit sur une file m/m/1 comme exemple (1 seul serveur)
-pour que le system soit stable (et donc testable )il faut qu'il y a moins d'arrive que de sortie 
-l'augmentation du temps d'attente vien des irregularité dans les statistiques 
-dans une periode il peut y avoir subitement plus de client qui arrive 
-ou ils peuvent etres servit plus lentement ce qui genere de l'attente 
-il est aussi possible que le serveur serve vite et que il attende sans client
-c'est du temps d'attente negatif (qui na pas de sens dans la vrai vie)
+Pour comprendre pourquoi, je m'appui sur une file m/m/1 comme exemple (1 seul serveur).
+Pour que le système soit stable (et donc testable ), il faut qu'il y ait moins d'arrivées que de sorties. 
+L'augmentation du temps d'attente vient des irrégularités dans les statistiques. 
+Dans une période, il peut y avoir subitement plus de clients qui arrivent 
+ou bien ils peuvent être servis plus lentement,  ce qui génère de l'attente. 
+Il est aussi possible que le serveur serve vite et qu il attende sans client, 
+c'est du temps d'attente négatif (qui n'a pas de sens dans la vraie vie)
 
-dans le cadre d'une m/m/10 
-les irregularité serons gommé par le nombre de serveur
-la ou il falais 1 irregularite pour faire grandire la file d'attente (pour m/m/1)
-il en faut maintent 10 ce qui reduit drastiquement les probabilité que cela arrive
-sans irregularite les clients arriveraient tout les 1/lambda et serais servit tout les 1/mu
-lambda ettant plus petit que mu ils n'attendrais jamais
+Dans le cadre d'une m/m/10 
+les irrégularités serons gommées par le nombre de serveur.
+Là où il fallait 1 irrégularité pour faire grandir la file d'attente (pour m/m/1)
+il en faut maintent 10,  ce qui réduit drastiquement les probabilités que cela arrive.
+Sans irrégularité, les clients arriveraient tous les 1/lambda et seraient servis tout les 1/mu
+lambda étant plus petit que mu,  ils n'attendraient jamais.
 
-le mode de fonctionement 2 ne beneficie pas de cette protection car
-les clients sont placer aleatoirements sur des serveurs
-voyons le problemme différemment si on donne a chaque client 
-sont nummero de file avan qu'ils commencent a attendre on se retronve alors avec 10 files distinctes m/m/1
-et le temps d'attente moyen de notre systemme et la moyenne du temps d'attente moyen de ces 10 files 
+Le mode de fonctionement 2 ne bénéficie pas de cette protection car
+les clients sont placés aléatoirements sur des serveurs.
+Voyons le problème différemment: si on donne à chaque client 
+son numéro de file avant qu'il ne commence à attendre, on se retronve alors avec 10 files distinctes m/m/1
+et le temps d'attente moyen de notre systeme est la moyenne du temps d'attente moyen de ces 10 files. 
 
 /*
 q1
@@ -38,6 +37,20 @@ expected
 70 7.460736 0.007000 0.000000
 90 15.19262 0.066730 0.000000
 95 25.10383 0.168200 0.000000
+
+t[90]
+1 0.095085 0.000000 1.000000
+5 0.500000 0.000000 1.000000
+10 1.000000 0.000000 1.000000
+20 2.000000 0.000000 1.000000
+50 5.036100 0.000700 1.000000
+70 7.460736 0.007000 0.9987
+90 15.19262 0.066730 0.9537
+95 25.10383 0.168200 0.9010
+99 95.41010 0.963700 0.8243
+
+
+
 
 
 seen
