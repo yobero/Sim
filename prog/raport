@@ -25,6 +25,16 @@ Voyons le problème différemment: si on donne à chaque client
 son numéro de file avant qu'il ne commence à attendre, on se retronve alors avec 10 files distinctes m/m/1
 et le temps d'attente moyen de notre systeme est la moyenne du temps d'attente moyen de ces 10 files. 
 
+il y a deux manieres d'interpreter le model 3
+soit le client choisi le serveur qui a fait le moins attendre ses client jusque la
+	le temps d'attente que le serveur a imposé a ses clients et le temps qu'il lui reste a imposé n'etant pas lie
+	ce choix revien a choisir au hazard
+soit il choisi le serveur qui sera disponible le plus tot
+	ce qui est la meme chose que le model 1
+	a la diference que au lieu d'attendre dans une file centralisé il attend dans la file du serveur
+
+
+
 /*
 q1
 * 
