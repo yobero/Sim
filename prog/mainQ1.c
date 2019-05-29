@@ -1,7 +1,7 @@
 #include "tri_fusion.c"
 
 //Constante
-#define EPSILON 1e-2
+#define EPSILON 1e-3
 #define MAXEVENT 10000000
 #define NBSERVEUR 10
 #define MU 10
@@ -26,7 +26,7 @@ typedef struct tableau{
 }tab;
 
 //Variable globale
-double LAMBDA=0;
+double LAMBDA=0.0;
 echeancier ech;
 double T=0.0;
 long int n=0;
@@ -80,6 +80,7 @@ void theorieE(){
 
 void theorieT90(){
   t90th=(Eth/q)*log(10*q);
+  if(t90th<0) t90th=0;
 }
 
 //Fonction pour ajouter un event dans l'echeancier
@@ -93,7 +94,7 @@ void initVariable(){
   n=0;
   T=0.0;
   ticket=1;
-  ticketCourant=1;
+  ticketCourant=0;
   cumul=0;
   compteur=0;
   Eth=0.0;
@@ -103,12 +104,13 @@ void initVariable(){
 
 void initTempsMoy(){
   for(int i=0;i<MAXEVENT;i++){
-    tempsMoy.T[i]=-1;
+    tempsMoy.T[i]=0.0;
   }
   tempsMoy.taille=0;
 }
 
 void initEcheancier(){
+  ech.taille=0;
   event e;
   e.type=0;
   e.t=0.0;
@@ -120,6 +122,7 @@ void initEcheancier(){
 void initSimulation(){
   initVariable();
   initTempsMoy();
+  initEcheancier();
 }
 
 int condition_arret (long double old, long double new){
@@ -134,7 +137,7 @@ int condition_arret (long double old, long double new){
 }
 
 event rechercheEvent(long int ticket){
-  int indice;
+  int indice=0;
   for(int i=0;i<ech.taille;i++){
     if(ech.T[i].etat==1 && ech.T[i].ticket==ticket){
       indice=i;
@@ -210,6 +213,7 @@ event extrait(){
 }
 
 void simulation(FILE* resultat){
+  initSimulation();
 
   long double oldNmoyen=0.0;
   long double Nmoyen=0.0;
@@ -226,12 +230,9 @@ void simulation(FILE* resultat){
     if(e.type==1) finService(e);
     if(n>10) break;
   }
-  double E;
-  double t90;
+  double E=0.0;
+  double t90=0.0;
   if(T<TEMPSMAX){
-    double Nmoy=cumul/T;
-    printf("nombre moyen de client : %f\n",Nmoy);
-
     //Calcul de E[A]
     for(int i=0;i<tempsMoy.taille;i++){
       E+=tempsMoy.T[i];

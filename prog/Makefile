@@ -21,7 +21,6 @@ runR : compile1 compile2
 		./q2
 		./q3
 		Rscript essai.R
-		eog plot.jpg
 R :
 	Rscript essai.R
 

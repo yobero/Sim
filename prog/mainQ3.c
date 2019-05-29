@@ -38,6 +38,9 @@ int occ[NBSERVEUR];
 double cumul=0;
 int compteur=0;
 
+double Eth=0.0;
+double t90th=0.0;
+
 //Fonction
 void ajoutEvent(event e){
   if(ech.taille==MAXEVENT){
@@ -254,7 +257,7 @@ void simulation(FILE* resultat){
     E=-1;
     t90=-1;
   }
-  fprintf(resultat, "%f %f %f %f\n",LAMBDA,Nmoy, E,t90 );
+  fprintf(resultat, "%f %f %f %f %f\n",LAMBDA, E,t90, Eth, t90th );
 
 }
 
