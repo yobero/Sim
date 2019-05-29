@@ -29,11 +29,11 @@ typedef struct tableau{
 //Variable globale
 double LAMBDA=0.0;
 echeancier ech;
+tab tempsMoy;
 double T=0.0;
 long int n[NBSERVEUR];
 long int N=0;
 long int ticket[NBSERVEUR];
-long int ticketCourant[NBSERVEUR];
 int occ[NBSERVEUR];
 double cumul=0;
 int compteur=0;
@@ -91,12 +91,6 @@ void initTicket(){
   }
 }
 
-void initTicketCourant(){
-  for(int i=0;i<NBSERVEUR;i++){
-    ticketCourant[i]=0;
-  }
-}
-
 void initVariable(){
   T=0.0;
   N=0;
@@ -109,7 +103,6 @@ void initSimulation(){
   initN();
   initTempsMoy();
   initTicket();
-  initTicketCourant();
   initVariable();
 }
 
@@ -125,7 +118,7 @@ long int fileM(){
 
 event rechercheEvent(long int ticket, int s){
   event e;
-  e.ticket=-1;
+  e.ticket;
   for(int i=0;i<ech.taille;i++){
     if(ech.T[i].etat==1 && ech.T[i].type==0 && ech.T[i].ticket==ticket && ech.T[i].serveur==s){
       e=ech.T[i];
@@ -134,7 +127,8 @@ event rechercheEvent(long int ticket, int s){
   return e;
 }
 
-void arriveeClient(event e){
+void arriveeClient(int i){
+  event e=ech.T[i];
   int indiceM = fileM();
   N++;
   n[indiceM]++;
@@ -158,38 +152,36 @@ void arriveeClient(event e){
     e2.ticket=e.ticket;
     e2.serveur=e.serveur;
     ajoutEvent(e2);
-    tempsMoy.T[tempsMoy.taille]=0.0;
-    tempsMoy.taille++;
   }
+  ech.T[i]=e;
   T=e.t;
 }
 
-void finService(event e){
+void finService(int i){
+  event e = ech.T[i];
   int serveur=e.serveur;
   if(n[serveur]>0){
     N--;
     n[serveur]--;
+    event p = rechercheEvent(e.ticket,serveur);
+    //printf(" type  %d ticket %ld temps %f     event fin %ld temps %f\n",p.type,p.ticket,p.t,e.ticket,e.t );
+    tempsMoy.T[tempsMoy.taille]=fabs(p.t-e.t);
+    tempsMoy.taille++;
     if(n[serveur]>0){
       event e1;
       e1.type=1;
       e1.t=e.t+Exponentielle(MU);
       e1.serveur=serveur;
-      e1.ticket=ticketCourant[serveur]+1;
-      ticketCourant[serveur]++;
+      e1.ticket=e.ticket+1;
       e1.etat=0;
       ajoutEvent(e1);
-
-      //le client qui commence le service a attendu
-      event p = rechercheEvent(e.ticket+1,serveur);
-      tempsMoy.T[tempsMoy.taille]=fabs(p.t-e.t);
-      tempsMoy.taille++;
     }
   }
   T=e.t;
 }
 
-event extrait(){
-  long int indiceM=0;
+int extrait(){
+  long int indiceM;
   for(int i=0;i<ech.taille;i++){
     if(ech.T[i].etat==0){
       indiceM=i;
@@ -198,12 +190,12 @@ event extrait(){
   }
 
   for(int i=0;i<ech.taille;i++){
-    if(ech.T[i].etat==0 && ech.T[i].t<ech.T[i].t){
+    if(ech.T[i].etat==0 && ech.T[i].t<ech.T[indiceM].t){
       indiceM=i;
     }
   }
   ech.T[indiceM].etat=1;
-  return ech.T[indiceM];
+  return indiceM;
 }
 
 int condition_arret (long double old, long double new){
@@ -225,16 +217,20 @@ void simulation(FILE* resultat){
   long double oldNmoyen=0.0;
   long double Nmoyen=0.0;
 
-  while(condition_arret(oldNmoyen,Nmoyen)==0){
-    event e = extrait();
+  //int a=0;
 
-    cumul+=(e.t-T)*N; //intervalle de temps * le nombre de client dans cette intervalle
+  while(condition_arret(oldNmoyen,Nmoyen)==0){
+  //while(a<1000){
+    //a++;
+    int i = extrait();
+
+    cumul+=(ech.T[i].t-T)*N; //intervalle de temps * le nombre de client dans cette intervalle
 
     oldNmoyen=Nmoyen;
     Nmoyen=cumul/T;
 
-    if(e.type==0) arriveeClient(e);
-    if(e.type==1) finService(e);
+    if(ech.T[i].type==0) arriveeClient(i);
+    if(ech.T[i].type==1) finService(i);
 
   }
   //Ecriture dans le fichier
@@ -257,7 +253,11 @@ void simulation(FILE* resultat){
     E=-1;
     t90=-1;
   }
-  fprintf(resultat, "%f %f %f %f %f\n",LAMBDA, E,t90, Eth, t90th );
+  fprintf(resultat, "%f %f %f %f %f\n",LAMBDA, E,t90,Eth,t90th);
+
+  /*for(int i=0;i<tempsMoy.taille/4;i=i+4){
+    printf("%f  %f  %f  %f\n",tempsMoy.T[i],tempsMoy.T[i+1], tempsMoy.T[i+2],tempsMoy.T[i+3] );
+  }*/
 
 }
 

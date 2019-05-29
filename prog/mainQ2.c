@@ -227,8 +227,6 @@ void simulation(FILE* resultat){
   double E;
   double t90;
   if(T<TEMPSMAX){
-    Nmoy=cumul/T;
-    printf("nombre moyen de client : %f\n",Nmoy);
     for(int i=0;i<tempsMoy.taille;i++){
       E+=tempsMoy.T[i];
     }
