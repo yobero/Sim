@@ -35,6 +35,10 @@ long int ticket=1;
 double cumul=0;
 int compteur=0;
 
+double rho=0.0;
+double Eth=0.0;
+double t90th=0.0;
+
 //Fonction
 void ajoutEvent(event e){
   if(ech.taille==MAXEVENT){
@@ -53,6 +57,19 @@ double Exponentielle(double lbda){
     r = (double) random()/RAND_MAX;
   }
   return -log(r)/(lbda*1.0);
+}
+
+void variableTh(){
+  rho = LAMBDA/MU;
+}
+
+void theorieE(){
+  Eth = rho*((1.0/MU)/(1-rho));
+}
+
+void theorieT90(){
+  t90th = (Eth/rho)*log(10*rho);
+  if(t90th<0) t90th=0;
 }
 
 void initEcheancier(){
@@ -78,6 +95,9 @@ void initVariable(){
   ticket=1;
   cumul=0;
   compteur=0;
+  Eth=0.0;
+  rho=0.0;
+  t90th=0.0;
 }
 
 void initSimulation(){
@@ -208,6 +228,7 @@ void simulation(FILE* resultat){
   double t90;
   if(T<TEMPSMAX){
     Nmoy=cumul/T;
+    printf("nombre moyen de client : %f\n",Nmoy);
     for(int i=0;i<tempsMoy.taille;i++){
       E+=tempsMoy.T[i];
     }
@@ -221,7 +242,12 @@ void simulation(FILE* resultat){
     E=-1;
     t90=-1;
   }
-  fprintf(resultat, "%f %f %f %f\n",LAMBDA*NBSERVEUR,Nmoy*NBSERVEUR, E*NBSERVEUR,t90*NBSERVEUR );
+
+  variableTh();
+  theorieE();
+  theorieT90();
+
+  fprintf(resultat, "%f %f %f %f %f\n",LAMBDA*NBSERVEUR, E*NBSERVEUR,t90*NBSERVEUR, Eth*NBSERVEUR, t90th*NBSERVEUR );
 }
 
 int main(){
