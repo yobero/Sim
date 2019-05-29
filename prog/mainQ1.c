@@ -26,7 +26,7 @@ typedef struct tableau{
 }tab;
 
 //Variable globale
-int LAMBDA=0;
+double LAMBDA=0;
 echeancier ech;
 double T=0.0;
 long int n=0;
@@ -35,7 +35,12 @@ long int ticketCourant=0;
 tab tempsMoy;
 double cumul=0;
 int compteur=0;
-int indice=0;
+
+double rho = 0.0;
+double Eth=0.0;
+double t90th=0.0;
+double p0=0.0;
+double q=0.0;
 
 //Fonction
 double Exponentielle(double lbda){
@@ -47,130 +52,74 @@ double Exponentielle(double lbda){
   return -log(r)/(lbda*1.0);
 }
 
-long int min(long int n, long int m){
-  if(n<m) return n;
-  else return m;
-}
-
-int extrait(){
-  int indiceM;
-  for(int i=0;i<ech.taille;i++){
-    if(ech.T[i].etat==0){
-      indiceM=i;
-      break;
-    }
+double factoriel(double v){
+  double res=1;
+  for(int i=v;i>0;i--){
+    res=res*i;
   }
-    for(int i=0;i<ech.taille;i++){
-      if(ech.T[i].etat==0 && ech.T[indiceM].t>ech.T[i].t){
-        indiceM=i;
-      }
-    }
-    ech.T[indiceM].etat=1;
-    return indiceM;
+  return res;
 }
 
+void variableTh(){
+  double s;
+  double d;
+  rho = LAMBDA/(NBSERVEUR*MU);
+  for(int i=1;i<NBSERVEUR;i++){
+    s+=(pow(NBSERVEUR*rho,i))/factoriel(i);
+  }
+  d=1+((pow(NBSERVEUR*rho,NBSERVEUR))/factoriel(NBSERVEUR)*(1-rho));
+
+  p0 = pow(d+s,-1);
+
+  q = ((pow(NBSERVEUR*rho,NBSERVEUR))/(factoriel(NBSERVEUR)*(1-rho)))*p0;
+}
+
+void theorieE(){
+  Eth=q/(NBSERVEUR*MU*(1-rho));
+}
+
+void theorieT90(){
+  t90th=(Eth/q)*log(10*q);
+}
+
+//Fonction pour ajouter un event dans l'echeancier
+//tester et OK
 void ajoutEvent(event e){
-  if(ech.taille==MAXEVENT){
-    printf("echeancier plein !!!\n");
-  }
-  else{
-    ech.T[ech.taille]=e;
-    ech.taille++;
-  }
+  ech.T[ech.taille]=e;
+  ech.taille++;
 }
-void initEcheancier(){
-  ech.taille=0;
-  event e;
-  e.type=0;
-  e.t=0.0;
-  e.etat=0;
-  e.ticket=0;
-  ajoutEvent(e);
+
+void initVariable(){
+  n=0;
+  T=0.0;
+  ticket=1;
+  ticketCourant=1;
+  cumul=0;
+  compteur=0;
+  Eth=0.0;
+  t90th=0.0;
+  rho=0.0;
 }
 
 void initTempsMoy(){
   for(int i=0;i<MAXEVENT;i++){
-    tempsMoy.T[i]=0.0;
+    tempsMoy.T[i]=-1;
   }
   tempsMoy.taille=0;
 }
 
-void initVariable(){
-  T=0.0;
-  n=0;
-  ticket=0;
-  ticketCourant=0;
-  cumul=0;
-  compteur=0;
-  indice=0;
+void initEcheancier(){
+  event e;
+  e.type=0;
+  e.t=0.0;
+  e.ticket=0;
+  e.etat=0;
+  ajoutEvent(e);
 }
 
 void initSimulation(){
-  initEcheancier();
-  initTempsMoy();
   initVariable();
-}
-
-
-event rechercherClient(long int ticket){
-  event e;
-  e.ticket=-1;
-  for(int i=0;i<ech.taille;i++){
-    if(ech.T[i].etat==1 && ech.T[i].type==0 && ech.T[i].ticket==ticket){
-      e=ech.T[i];
-      break;
-    }
-  }
-  return e;
-}
-
-void arriveeClient(event e){
-  n++;
-  event e1;
-  e1.type=0;
-  e1.t=e.t+Exponentielle(LAMBDA);
-  e1.etat=0;
-  e1.ticket=ticket;
-  ajoutEvent(e1);
-  ticket++;
-
-  if(n<=NBSERVEUR && n>0){
-    event e2;
-    e2.type=1;
-    e2.t=e.t+Exponentielle(MU*n);
-    e2.etat=0;
-    e2.ticket=e.ticket;
-    ajoutEvent(e2);
-
-    //Ce client n'attend pas
-    tempsMoy.T[tempsMoy.taille]=0.0;
-    tempsMoy.taille++;
-  }
-  T=e.t;
-}
-
-//FS
-void finService(event e){
-  if(n>0){
-    n--;
-    if(n>=NBSERVEUR){
-      //printf("BONJOUR\n");
-      //Cas ou il y a plus de NBSERVEUR clients dans la file et donc le serveur liberer peut prendre le prochain client
-      //grâce a e on connait le serveur disponible
-      event e1;
-      e1.type=1;
-      e1.t=e.t+Exponentielle(MU*NBSERVEUR);
-      e1.ticket=ticketCourant;
-      ticketCourant++;
-      e1.etat=0;
-      ajoutEvent(e1);
-
-      event p = rechercherClient(ticketCourant);
-      tempsMoy.T[tempsMoy.taille]=fabs(p.t-e.t);
-      tempsMoy.taille++;
-    }
-  }
-  T=e.t;
+  initTempsMoy();
 }
 
 int condition_arret (long double old, long double new){
@@ -184,30 +133,89 @@ int condition_arret (long double old, long double new){
   return 0;
 }
 
-void etatEch(){
-  printf("========================taille de l'echeancier : %ld ========= %ld\n", ech.taille,n);
+event rechercheEvent(long int ticket){
+  int indice;
   for(int i=0;i<ech.taille;i++){
-    printf("position : %d", i);
-    printf(", type : %d", ech.T[i].type);
-    printf(", ticket : %ld", ech.T[i].ticket);
-    printf(", t : %f",ech.T[i].t);
-    printf(", etat : %d\n\n", ech.T[i].etat);
+    if(ech.T[i].etat==1 && ech.T[i].ticket==ticket){
+      indice=i;
+      break;
+    }
   }
+  return ech.T[indice];
 }
 
-//Fonction simulation
+void arriveeClient(event e){
+  n++;
+
+  //Preparation de l'arrivée d'un nouveau client
+  event e1;
+  e1.type=0;
+  e1.t=e.t+Exponentielle(LAMBDA);
+  e1.ticket=ticket;
+  e1.etat=0;
+  ajoutEvent(e1);
+  ticket++;
+
+  //Si la condition est valide alors il reste au moins un serveur disponible
+  if(n<=NBSERVEUR){
+    event e2;
+    e2.type=1;
+    e2.t=e.t+Exponentielle(n*MU);
+    e2.ticket=e.ticket;
+    e2.etat=0;
+    ajoutEvent(e2);
+
+    //On passe au client suivant qui n'a pas encore de FS
+    ticketCourant++;
+  }
+  T=e.t;
+}
+
+void finService(event e){
+  if(n>0){
+    n--;
+    event ac = rechercheEvent(e.ticket);
+    tempsMoy.T[tempsMoy.taille]=fabs(ac.t-e.t);
+    tempsMoy.taille++;
+
+    if(n>=NBSERVEUR){
+      event e1;
+      e1.type=1;
+      e1.t=e.t+Exponentielle(NBSERVEUR*MU);
+      e1.ticket=ticketCourant;
+      e1.etat=0;
+      ajoutEvent(e1);
+      ticketCourant++;
+    }
+  }
+  T=e.t;
+}
+
+//Fonction pour cherche le prochain evenement
+//Tester et OK
+event extrait(){
+  int indice;
+  for(int i=0;i<ech.taille;i++){
+    if(ech.T[i].etat==0){
+      indice=i;
+      break;
+    }
+  }
+  for(int i=0;i<ech.taille;i++){
+    if(ech.T[i].etat==0 && ech.T[i].t<ech.T[indice].t)
+      indice=i;
+  }
+  ech.T[indice].etat=1;
+  return ech.T[indice];
+}
+
 void simulation(FILE* resultat){
-  initSimulation();
 
   long double oldNmoyen=0.0;
-    long double Nmoyen=0.0;
-
+  long double Nmoyen=0.0;
 
   while(condition_arret(oldNmoyen,Nmoyen)==0){
-  //while(n<100){
-    indice=extrait();
-    event e = ech.T[indice];
-    //printf("%d\n",n);
+    event e = extrait();
 
     cumul+=(e.t-T)*n; //intervalle de temps * le nombre de client dans cette intervalle
 
@@ -216,27 +224,35 @@ void simulation(FILE* resultat){
 
     if(e.type==0) arriveeClient(e);
     if(e.type==1) finService(e);
-    //etatEch();
+    if(n>10) break;
   }
-  //Ecriture dans le fichier
-  //LAMBDA Nmoy E[A] T90
-  double Nmoy;
   double E;
   double t90;
   if(T<TEMPSMAX){
-    Nmoy=cumul/T;
+    double Nmoy=cumul/T;
+    printf("nombre moyen de client : %f\n",Nmoy);
+
+    //Calcul de E[A]
     for(int i=0;i<tempsMoy.taille;i++){
       E+=tempsMoy.T[i];
     }
     E=E/tempsMoy.taille;
-    t90=0.0;
+
+    //Calcul de t901
+    tri_fusion(tempsMoy.T,tempsMoy.taille);
+    int w = tempsMoy.taille*90/100;
+    t90=tempsMoy.T[w];
   }
   else{
-    Nmoy=-1;
     E=-1;
-    t90=-1;
   }
-  fprintf(resultat, "%d %f %f %f\n",LAMBDA, Nmoy, E, t90);
+
+  //Partie theorique
+  variableTh();
+  theorieE();
+  theorieT90();
+
+  fprintf(resultat, "%f %f %f %f %f\n",LAMBDA, E,t90, Eth, t90th );
 }
 
 int main(){
@@ -258,14 +274,14 @@ int main(){
         //48 est la valeur decimal du caractère 0.
         if(l-48>0){
           LAMBDA = l-48;
-          printf("%d\n", LAMBDA);
+          printf("%f\n", LAMBDA);
           simulation(resultat);
         }
       }
       else{
         if(l-48>0 && m-48>=0){
           LAMBDA = (l-48)*10+(m-48);
-          printf("%d\n",LAMBDA );
+          printf("%f\n",LAMBDA );
           simulation(resultat);
         }
         //On passe le caractère \n (retour à la ligne)
